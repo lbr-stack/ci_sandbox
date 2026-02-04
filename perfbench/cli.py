@@ -1,0 +1,99 @@
+"""CLI commands for performance benchmarking."""
+
+import json
+import random
+import time
+from pathlib import Path
+
+import typer
+
+
+def compute():
+    """
+    Compute performance metrics and output to JSON.
+    Includes a 30-second sleep to simulate a long-running job.
+    """
+    typer.echo("Computing performance metrics...")
+    
+    # Simulate long-running computation
+    time.sleep(30)
+    
+    # Generate dummy performance value
+    performance_value = random.uniform(0.5, 1.0)
+    
+    result = {
+        "performance": performance_value,
+        "timestamp": time.time(),
+        "status": "completed"
+    }
+    
+    # Output JSON
+    output_path = Path("performance_result.json")
+    with open(output_path, "w") as f:
+        json.dump(result, f, indent=2)
+    
+    typer.echo(f"Performance metrics saved to {output_path}")
+    typer.echo(f"Performance value: {performance_value:.4f}")
+
+
+def compute_main():
+    """Entry point for compute CLI."""
+    typer.run(compute)
+
+
+def evaluate(ref: str, candidate: str):
+    """
+    Evaluate candidate performance against reference baseline.
+    
+    Args:
+        ref: Path to reference/baseline JSON file
+        candidate: Path to candidate JSON file
+    """
+    typer.echo(f"Evaluating candidate against reference...")
+    typer.echo(f"Reference: {ref}")
+    typer.echo(f"Candidate: {candidate}")
+    
+    # Load reference data
+    ref_path = Path(ref)
+    if not ref_path.exists():
+        typer.echo(f"Error: Reference file not found: {ref}", err=True)
+        raise typer.Exit(code=1)
+    
+    with open(ref_path, "r") as f:
+        ref_data = json.load(f)
+    
+    # Load candidate data
+    candidate_path = Path(candidate)
+    if not candidate_path.exists():
+        typer.echo(f"Error: Candidate file not found: {candidate}", err=True)
+        raise typer.Exit(code=1)
+    
+    with open(candidate_path, "r") as f:
+        candidate_data = json.load(f)
+    
+    # Compare performance values
+    ref_perf = ref_data.get("performance", 0)
+    candidate_perf = candidate_data.get("performance", 0)
+    
+    difference = candidate_perf - ref_perf
+    percent_change = (difference / ref_perf * 100) if ref_perf != 0 else 0
+    
+    typer.echo("\n" + "="*50)
+    typer.echo("EVALUATION RESULTS")
+    typer.echo("="*50)
+    typer.echo(f"Reference performance:  {ref_perf:.4f}")
+    typer.echo(f"Candidate performance:  {candidate_perf:.4f}")
+    typer.echo(f"Difference:             {difference:+.4f}")
+    typer.echo(f"Percent change:         {percent_change:+.2f}%")
+    typer.echo("="*50)
+    
+    if candidate_perf >= ref_perf:
+        typer.echo("✓ Candidate performance is better or equal to reference!")
+    else:
+        typer.echo("✗ Candidate performance is worse than reference.")
+        raise typer.Exit(code=1)
+
+
+def evaluate_main():
+    """Entry point for evaluate CLI."""
+    typer.run(evaluate)
