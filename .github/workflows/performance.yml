@@ -103,20 +103,11 @@ jobs:
           name: performance-result-${{ github.sha }}
           path: ./candidate
 
-      - name: Get base SHA
-        id: base-sha
-        run: |
-          git fetch origin ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }} --depth=1
-          echo "BASE_SHA=${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}" >> $GITHUB_OUTPUT
-
       - name: Download baseline result
-        uses: dawidd6/action-download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          workflow: performance.yml
-          branch: main
-          name: performance-result-${{ steps.base-sha.outputs.BASE_SHA }}
+          name: performance-result-${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
           path: ./baseline
-          if_no_artifact_found: warn
 
       - name: Evaluate performance
         run: evaluate ./baseline/performance_result.json ./candidate/performance_result.json
