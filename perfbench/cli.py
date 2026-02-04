@@ -24,7 +24,7 @@ def compute():
     time.sleep(30)
 
     # Generate dummy performance value
-    performance_value = 20
+    performance_value = 40
 
     # Get git hash if available
     git_hash = None
