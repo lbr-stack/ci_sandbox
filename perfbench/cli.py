@@ -21,7 +21,7 @@ def compute():
     typer.echo("Computing performance metrics...")
     
     # Simulate long-running computation
-    time.sleep(30)
+    time.sleep(180)
     
     # Generate dummy performance value
     performance_value = random.uniform(0.5, 1.0)
