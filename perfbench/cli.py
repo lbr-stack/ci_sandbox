@@ -21,10 +21,10 @@ def compute():
     typer.echo("Computing performance metrics...")
     
     # Simulate long-running computation
-    time.sleep(180)
+    time.sleep(5)
     
     # Generate dummy performance value
-    performance_value = 4
+    performance_value = 7
     
     # Get git hash if available
     git_hash = None
