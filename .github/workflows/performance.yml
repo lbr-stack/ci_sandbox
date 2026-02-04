@@ -44,37 +44,17 @@ jobs:
   compute-baseline-main:
     name: Compute Performance Baseline on Main
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || 'main' }}
+          ref: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
 
-      - name: get main SHA
-        id: main-sha
-        run: echo "MAIN_SHA=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
-
-      - name: Early stop if performance result exists
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const artifactName = `performance-result-${process.env.MAIN_SHA}`;
-            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: context.runId,
-            });
-            const artifactExists = artifacts.data.artifacts.some(artifact => artifact.name === artifactName);
-            if (artifactExists) {
-              core.info(`Artifact ${artifactName} already exists. Stopping the job.`);
-              core.setOutput('artifact_exists', 'true');
-              process.exit(0);
-            } else {
-              core.setOutput('artifact_exists', 'false');
-            }
-        env:
-          MAIN_SHA: ${{ steps.main-sha.outputs.MAIN_SHA }}
+      - name: Get base SHA
+        id: base-sha
+        run: echo "BASE_SHA=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -92,7 +72,7 @@ jobs:
       - name: Upload performance result
         uses: actions/upload-artifact@v4
         with:
-          name: performance-result-${{ steps.main-sha.outputs.MAIN_SHA }}
+          name: performance-result-${{ steps.base-sha.outputs.BASE_SHA }}
           path: performance_result.json
           retention-days: 90
 
@@ -101,11 +81,11 @@ jobs:
     name: Evaluate Against Baseline
     runs-on: ubuntu-latest
     needs: [compute-baseline, compute-baseline-main]
-    if: (github.event_name == 'pull_request' || github.event_name == 'merge_group')
+    if: always() && (github.event_name == 'pull_request' || github.event_name == 'merge_group') && needs.compute-baseline.result == 'success'
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -123,12 +103,18 @@ jobs:
           name: performance-result-${{ github.sha }}
           path: ./candidate
 
+      - name: Get base SHA
+        id: base-sha
+        run: |
+          git fetch origin ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }} --depth=1
+          echo "BASE_SHA=${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}" >> $GITHUB_OUTPUT
+
       - name: Download baseline result
         uses: dawidd6/action-download-artifact@v3
         with:
           workflow: performance.yml
           branch: main
-          name: performance-result-${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          name: performance-result-${{ steps.base-sha.outputs.BASE_SHA }}
           path: ./baseline
           if_no_artifact_found: warn
 
