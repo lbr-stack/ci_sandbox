@@ -7,6 +7,11 @@ from pathlib import Path
 
 import typer
 
+try:
+    from git import Repo
+except ImportError:
+    Repo = None
+
 
 def compute():
     """
@@ -21,10 +26,20 @@ def compute():
     # Generate dummy performance value
     performance_value = random.uniform(0.5, 1.0)
     
+    # Get git hash if available
+    git_hash = None
+    if Repo is not None:
+        try:
+            repo = Repo(search_parent_directories=True)
+            git_hash = repo.head.commit.hexsha
+        except Exception:
+            pass
+    
     result = {
         "performance": performance_value,
         "timestamp": time.time(),
-        "status": "completed"
+        "status": "completed",
+        "git_hash": git_hash
     }
     
     # Output JSON
@@ -34,6 +49,8 @@ def compute():
     
     typer.echo(f"Performance metrics saved to {output_path}")
     typer.echo(f"Performance value: {performance_value:.4f}")
+    if git_hash:
+        typer.echo(f"Git hash: {git_hash}")
 
 
 def compute_main():
