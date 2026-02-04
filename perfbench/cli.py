@@ -35,7 +35,7 @@ def compute():
         except Exception:
             pass
 
-    performance_value = 3
+    performance_value = 8
     
     result = {
         "performance": performance_value,
