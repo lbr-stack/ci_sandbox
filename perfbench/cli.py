@@ -21,7 +21,7 @@ def compute():
     typer.echo("Computing performance metrics...")
 
     # Simulate long-running computation
-    time.sleep(30)
+    time.sleep(5)
 
     # Generate dummy performance value
     performance_value = 40
@@ -34,6 +34,8 @@ def compute():
             git_hash = repo.head.commit.hexsha
         except Exception:
             pass
+
+    performance_value = 25
 
     result = {
         "performance": performance_value,
