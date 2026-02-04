@@ -1,0 +1,79 @@
+name: Performance Benchmark
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  compute-baseline:
+    name: Compute Performance Baseline
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+      
+      - name: Run compute
+        run: compute
+      
+      - name: Upload performance result
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-result-${{ github.sha }}
+          path: performance_result.json
+          retention-days: 90
+
+  evaluate:
+    name: Evaluate Against Baseline
+    runs-on: ubuntu-latest
+    needs: [compute-baseline]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+      
+      - name: Download candidate result
+        uses: actions/download-artifact@v4
+        with:
+          name: performance-result-${{ github.sha }}
+          path: ./candidate
+      
+      - name: Download baseline result from main
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: performance.yml
+          branch: main
+          name: performance-result-${{ github.event.pull_request.base.sha }}
+          path: ./baseline
+          if_no_artifact_found: warn
+      
+      - name: Evaluate performance
+        run: evaluate ./baseline/performance_result.json ./candidate/performance_result.json
