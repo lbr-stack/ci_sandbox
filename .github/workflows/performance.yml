@@ -97,7 +97,7 @@ jobs:
           
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             # For pull_request events, check labels directly
-            LABELS='${{ toJSON(github.event.pull_request.labels.*.name) }}'
+            LABELS='${{ toJSON(github.event.pull_request.labels[*].name) }}'
             if echo "$LABELS" | grep -q "skip-performance-check"; then
               echo "Label 'skip-performance-check' found on PR"
               SKIP_EVAL="true"
@@ -114,13 +114,15 @@ jobs:
               echo "Extracted PR number: $PR_NUMBER"
               
               # Use GitHub CLI to fetch PR labels
-              PR_LABELS=$(gh pr view "$PR_NUMBER" --repo ${{ github.repository }} --json labels --jq '.labels[].name' 2>/dev/null || echo "")
-              
-              if echo "$PR_LABELS" | grep -q "skip-performance-check"; then
-                echo "Label 'skip-performance-check' found on PR #$PR_NUMBER (from merge group)"
-                SKIP_EVAL="true"
+              if PR_LABELS=$(gh pr view "$PR_NUMBER" --repo ${{ github.repository }} --json labels --jq '.labels[].name' 2>&1); then
+                if echo "$PR_LABELS" | grep -q "skip-performance-check"; then
+                  echo "Label 'skip-performance-check' found on PR #$PR_NUMBER (from merge group)"
+                  SKIP_EVAL="true"
+                else
+                  echo "Label 'skip-performance-check' not found on PR #$PR_NUMBER"
+                fi
               else
-                echo "Label 'skip-performance-check' not found on PR #$PR_NUMBER"
+                echo "Warning: Could not fetch PR labels for PR #$PR_NUMBER: $PR_LABELS"
               fi
             else
               echo "Could not extract PR number from head_ref: $HEAD_REF"
