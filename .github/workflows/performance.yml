@@ -85,6 +85,9 @@ jobs:
     if: always() && (github.event_name == 'pull_request' || github.event_name == 'merge_group') && needs.compute-baseline.result == 'success'
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
       - name: Check for skip-performance-check label
         id: check-label
         env:
@@ -111,7 +114,7 @@ jobs:
               echo "Extracted PR number: $PR_NUMBER"
               
               # Use GitHub CLI to fetch PR labels
-              PR_LABELS=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name' 2>/dev/null || echo "")
+              PR_LABELS=$(gh pr view "$PR_NUMBER" --repo ${{ github.repository }} --json labels --jq '.labels[].name' 2>/dev/null || echo "")
               
               if echo "$PR_LABELS" | grep -q "skip-performance-check"; then
                 echo "Label 'skip-performance-check' found on PR #$PR_NUMBER (from merge group)"
@@ -126,9 +129,6 @@ jobs:
           
           echo "skip_eval=$SKIP_EVAL" >> $GITHUB_OUTPUT
           echo "Skip evaluation: $SKIP_EVAL"
-
-      - name: Checkout code
-        uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v5
