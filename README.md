@@ -44,6 +44,20 @@ The repository includes a GitHub Actions workflow (`.github/workflows/performanc
    - Runs `compute` on the PR branch (candidate)
    - Runs `compute` on the main branch (baseline)
    - Runs `evaluate` to compare candidate vs baseline
+3. **On Merge Queue**: Runs the same evaluation as pull requests
+
+#### Skipping Performance Evaluation
+
+You can skip the performance evaluation for a specific PR by adding the `skip-performance-check` label to the PR. This is useful when:
+- You know the performance regression is expected and acceptable
+- You're making changes that don't affect performance (e.g., documentation)
+- The performance test is flaky or not relevant for the change
+
+**How it works:**
+- **For Pull Requests**: Add the `skip-performance-check` label to the PR. The evaluation step will be skipped and will not block merging.
+- **For Merge Queue**: The label must be present on the PR before it enters the merge queue. The workflow will check the PR's labels even when running in the merge group context.
+
+When the label is present, the evaluation job still runs but skips the actual performance comparison, allowing the PR to merge even if performance has regressed.
 
 ### Installation
 
